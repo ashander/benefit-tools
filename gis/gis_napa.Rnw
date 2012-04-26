@@ -1,0 +1,96 @@
+Work in progress \dots 
+
+\subsection{Tools} 
+
+Using the invaluable libraries {\tt sp, rgdal, raster}. 
+
+<<loadlibs>>=
+require(raster)
+require(rgdal)
+
+@ 
+
+Napa gauge location:
+
+Latitude 38 deg 22 min 06 second,   Longitude 122 deg 18 min 08 second   NAD27
+
+Napa County, California, Hydrologic Unit 18050002
+
+Drainage area: 218 square miles
+
+Datum of gage: 24.74 feet above   NGVD29.
+
+Converts to: 38.368333 , -122.302222
+
+
+\subsection{Loading data} 
+
+Using {\tt raster} we check to see what kind of data we can load... 
+
+<<test-load,message=FALSE>>=
+## requires a simlink to the DEM or DEM in folder
+wd <- paste(getwd(), 'Napa_DEM/', sep='/')
+files <- list.files(wd)
+files
+@
+
+plenty of adf rasters
+<<message=FALSE>>=
+list.files(paste(wd,'napa_tintodem',sep='/'))
+@ 
+
+
+We can plot the raster DEM, for example
+
+<<layer-plot,message=FALSE,cache=TRUE>>=
+filename <- 'napa_tintodem'
+r <- raster(paste(wd, filename, sep='/'))
+plot(r, main=filename,axes=FALSE) ## plot of napa DEM raster
+
+
+@ 
+
+Want to combine raster with maps
+<<starting-gis>>=
+
+p <- rasterToPoints(r)
+df <- data.frame(p)
+colnames(df) = c("lon", "lat", "dn")
+
+## need to convert...
+#g + geom_point(aes(x=lon,y=lat, color=dn), data=df) 
+
+
+## gauge location
+
+napa.gauge <- data.frame(lat=38.368333, lon=-122.302222)
+@ 
+
+
+Need to donwload maps 
+<<>>=
+
+## california shell
+require('maps')
+ca <- data.frame(map("state",region=c('california'), plot=FALSE)[c('x','y')])
+
+## clean data of outliers... 
+ca.max = apply(na.omit(ca), 2, max)
+ca.min = apply(na.omit(ca), 2, min)
+p.lat <-na.omit(p.lat)
+p.lat <- p.lat[ca.min[2] <= p.lat$Latitude & p.lat$Latitude <=ca.max[2],]
+p.lat <- p.lat[ca.min[1] <= p.lat$Longitude & p.lat$Longitude <=ca.max[1],]
+
+g <- qplot(x,y, data=ca, geom='path')
+g <- g + geom_point(aes(y=Latitude, x=Longitude), size=0.5,data=p.lat)
+g <- g+ geom_point(aes(y=lat, x=lon), data=napa.gauge)
+g <- g+ geom_text(aes(y=lat+.1, x=lon, label='usgs'), data=napa.gauge)
+
+g + ylim(c(37.5,39))+xlim(-123,-119.)+coord_map(project="mollweide")
+
+@ 
+
+
+
+
+

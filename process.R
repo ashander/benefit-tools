@@ -64,13 +64,15 @@ rangeGauge <- function(flow.df, density=100, date.min=NULL, date.max=NULL){
   regSample(df$discharge, density)
 }
 
-regSample <- function(observations, density){
+regSample <- function(observations, density, thresh=10){
+  #
   obs <- observations
-  obs <- obs[obs!=0]
+  obs <- obs[obs > thresh]
   rng<- range(obs)
   lo <- rng[1]
   hi <- rng[2]
   seq(lo, hi, length.out=density)
 }
+
 
 
